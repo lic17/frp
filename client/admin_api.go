@@ -180,7 +180,16 @@ func (svr *Service) apiGetConfig(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows := strings.Split(string(content), "\n")
+	//TODO 读取解密
+	contentStr, err := config.Decrypt(string(content))
+	if err != nil {
+		res.Code = 500
+		res.Msg = fmt.Sprintf("decrypt content error: %v", err)
+		log.Warn("%s", res.Msg)
+		return
+	}
+
+	rows := strings.Split(contentStr, "\n")
 	newRows := make([]string, 0, len(rows))
 	for _, row := range rows {
 		row = strings.TrimSpace(row)
@@ -232,6 +241,15 @@ func (svr *Service) apiPutConfig(w http.ResponseWriter, r *http.Request) {
 	}
 	content := string(b)
 
+	//TODO 读取解密
+	content, err = config.Decrypt(content)
+	if err != nil {
+		res.Code = 500
+		res.Msg = fmt.Sprintf("decrypt content error: %v", err)
+		log.Warn("%s", res.Msg)
+		return
+	}
+
 	for _, row := range strings.Split(content, "\n") {
 		row = strings.TrimSpace(row)
 		if strings.HasPrefix(row, "token") {
@@ -261,6 +279,15 @@ func (svr *Service) apiPutConfig(w http.ResponseWriter, r *http.Request) {
 		newRows = tmpRows
 	}
 	content = strings.Join(newRows, "\n")
+
+	//TODO 回写加密
+	content, err = config.Encrypt(content)
+	if err != nil {
+		res.Code = 500
+		res.Msg = fmt.Sprintf("decrypt content error: %v", err)
+		log.Warn("%s", res.Msg)
+		return
+	}
 
 	err = os.WriteFile(svr.cfgFile, []byte(content), 0o644)
 	if err != nil {

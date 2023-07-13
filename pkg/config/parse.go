@@ -32,11 +32,18 @@ func ParseClientConfig(filePath string) (
 	if err != nil {
 		return
 	}
+	//TODO 读取解密content
+	contentStr, err := Decrypt(string(content))
+	if err != nil {
+		err = fmt.Errorf("decrypt content error: %v", err)
+		return
+	}
+
 	configBuffer := bytes.NewBuffer(nil)
-	configBuffer.Write(content)
+	configBuffer.WriteString(contentStr)
 
 	// Parse common section.
-	cfg, err = UnmarshalClientConfFromIni(content)
+	cfg, err = UnmarshalClientConfFromIni([]byte(contentStr))
 	if err != nil {
 		return
 	}
@@ -53,8 +60,15 @@ func ParseClientConfig(filePath string) (
 		err = fmt.Errorf("getIncludeContents error: %v", err)
 		return
 	}
+	//TODO 读取解密buf
+	bufStr, err := Decrypt(string(buf))
+	if err != nil {
+		err = fmt.Errorf("decrypt content error: %v", err)
+		return
+	}
+
 	configBuffer.WriteString("\n")
-	configBuffer.Write(buf)
+	configBuffer.WriteString(bufStr)
 
 	// Parse all proxy and visitor configs.
 	pxyCfgs, visitorCfgs, err = LoadAllProxyConfsFromIni(cfg.User, configBuffer.Bytes(), cfg.Start)

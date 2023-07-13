@@ -15,6 +15,9 @@
 package config
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"encoding/base64"
 	"strings"
 )
 
@@ -48,4 +51,39 @@ func GetMapByPrefix(set map[string]string, prefix string) map[string]string {
 	}
 
 	return m
+}
+
+var randBytes = []byte{33, 63, 47, 21, 35, 15, 24, 64, 78, 53, 78, 89, 33, 55, 14, 05}
+
+const MySecret string = "abc&1*2^7%b^#~#^s0^=)^34"
+
+func Encrypt(text string) (string, error) {
+	block, err := aes.NewCipher([]byte(MySecret))
+	if err != nil {
+		return "", err
+	}
+
+	plainText := []byte(text)
+	cfb := cipher.NewCFBEncrypter(block, randBytes)
+	cipherText := make([]byte, len(plainText))
+	cfb.XORKeyStream(cipherText, plainText)
+
+	return base64.StdEncoding.EncodeToString(cipherText), nil
+}
+
+func Decrypt(text string) (string, error) {
+	block, err := aes.NewCipher([]byte(MySecret))
+	if err != nil {
+		return "", err
+	}
+
+	cipherText, err := base64.StdEncoding.DecodeString(text)
+	if err != nil {
+		return "", err
+	}
+	cfb := cipher.NewCFBDecrypter(block, randBytes)
+	plainText := make([]byte, len(cipherText))
+	cfb.XORKeyStream(plainText, cipherText)
+
+	return string(plainText), nil
 }
